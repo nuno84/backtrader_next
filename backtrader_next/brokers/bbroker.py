@@ -1234,13 +1234,6 @@ class BackBroker(bt.BrokerBase):
                 uhist[0] = uhorder = next(uhorders, None)
 
     def next(self):
-        # Print current datetime from first available data
-        #try:
-        #    dt = self.cerebro.datas[0].datetime.datetime(0)
-        #    print(f"[Broker.next()] dt={dt}")
-        #except:
-        #    pass
-
         while self._toactivate:
             self._toactivate.popleft().activate()
 
