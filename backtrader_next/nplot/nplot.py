@@ -214,8 +214,15 @@ class Plot(with_metaclass(MetaParams, object)):
         return None
 
     def prepare_trades_list(self, data_name:str):
-        trades = self.performance.gen_trades(data_name, True) if self.performance else pd.DataFrame()
-        orders = self.performance.gen_orders(data_name) if self.performance else pd.DataFrame()
+        # Same mapping as draw_main: orders/trades are recorded against the
+        # minute feed, so the daily panel needs to look them up under its
+        # sibling minute name.
+        lookup_name = data_name
+        if lookup_name.endswith('_1d'):
+            lookup_name = lookup_name[:-len('_1d')] + '_1m'
+
+        trades = self.performance.gen_trades(lookup_name, True) if self.performance else pd.DataFrame()
+        orders = self.performance.gen_orders(lookup_name) if self.performance else pd.DataFrame()
         if trades.empty or orders.empty:
             lst = []
         else:
@@ -577,9 +584,18 @@ class Plot(with_metaclass(MetaParams, object)):
 
         # Plot Trades
         if c_data and self.performance is not None:
-            trades = self.performance.gen_trades(data_name)
+            # Orders/trades are always executed on the minute feed
+            # ('{ticker}_1m'), never on the daily feed. When drawing the
+            # daily ('{ticker}_1d') panel, look them up under the sibling
+            # minute name so the same buy/sell/close markers also appear
+            # there instead of only ever showing on the minute chart.
+            order_lookup_name = data_name
+            if order_lookup_name.endswith('_1d'):
+                order_lookup_name = order_lookup_name[:-len('_1d')] + '_1m'
+
+            trades = self.performance.gen_trades(order_lookup_name)
             # orders = self.performance.gen_orders(data_name).groupby('o_datetime')['o_size'].sum().reset_index()
-            orders = self.performance.gen_orders(data_name)
+            orders = self.performance.gen_orders(order_lookup_name)
             markers = list()
             marker_details = []
             for index, row in orders.iterrows():
